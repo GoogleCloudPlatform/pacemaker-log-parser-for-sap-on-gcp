@@ -10,29 +10,29 @@ It generates an output file with critical Pacemaker events such as fencing, reso
 
 The program requires Python 3.6+ to run.
 
-Show help:
+**Show help:**
 
 ./logpaser -h
 
-Option '-p' to parse up to two pacemaker logs
+**Option '-p' to parse up to two pacemaker logs**
 
 ./logparser -p node1_pacemaker.log node2_pacemaker.log 
 
-Option '-s' to parse up to two system logs.
+**Option '-s' to parse up to two system logs.**
 
 ./logparser -s node1_system_log node2_system_log
 
-Option '-hb' to parse one hb_report file from SLES.
+**Option '-hb' to parse one hb_report file from SLES.**
 
 ./logparser -hb hb_report.tar.bz2
 
-Option '-sos' to parse up to two sosreport from RHEL.
+**Option '-sos' to parse up to two sosreport from RHEL.**
 
 ./logparser -sos sosreport1.tar.xz sosreport2.tar.xz
 
-NOTE: At least one of the above four options is requried and they can be combined.
+**NOTE: At least one of the above four options is requried and they can be combined.**
 
-Optional options:
+**Optional options:**
 
 Option '-o' to specify output file name. By default, the output is written to logparser.out
 

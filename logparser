@@ -16,6 +16,11 @@
 # ------------------------------------------------------------------------
 
 import logparser
+import sys
+
+ver = sys.version_info
+if ver.major == 3 and ver.minor < 6:
+  sys.exit('Pacemaker log parser requires pyhon 3.6+')
 
 if __name__ == '__main__':
   logparser.main()
