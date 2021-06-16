@@ -74,8 +74,6 @@ Examples:
 
 2021-03-26 03:10:38 node1 pengine: notice: LogAction:     * Stop       rsc_SAPHanaTopology_SID_HDB00:1     (                 node2 )   due to node availability
 
-2021-03-26 03:10:38 node1 pengine: notice: LogAction:     * Promote    rsc_SAPHana_SID_HDB00:0             ( Slave -> Master node1 )
-
 3. Failed resource operations
 
 Examples:
