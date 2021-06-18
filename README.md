@@ -6,6 +6,8 @@ It can parse pacemaker logs, system logs, hb_report from SUSE and sosreport from
 
 It generates an output file with critical Pacemaker events such as fencing, resource actions and errors such as failed resource operations.
 
+This is not an officially supported Google product
+
 ## How to use
 
 The program requires Python 3.6+ to run.
