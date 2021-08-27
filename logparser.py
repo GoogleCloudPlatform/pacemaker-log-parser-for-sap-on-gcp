@@ -91,7 +91,7 @@ class LogParser():
         ' of|reboot|cannot run anywhere|attrd_peer_update|High CPU load detected|cli-ban|cli-prefer'
         'cib-bootstrap-options-maintenance-mode|-is-managed|-maintenance|-standby')
     self.system_log_keywords = (
-        r'SAPHana\(|SAPInstance\(|gcp-vpc-move-vip:|gcp:alias:|gcp:stonith|fence_gce:|corosync\[|Result'
+        r'SAPHana\(|SAPHanaController\(|SAPHanaTopology\(|SAPInstance\(|gcp-vpc-move-vip:|gcp:alias:|gcp:stonith|fence_gce:|corosync\[|Result'
         ' of|reboot')
 
     # Generate the big sql query
@@ -240,7 +240,7 @@ class LogParser():
     """Parse hb_report in format tar.gz.
 
     Extract the two cluster nodes from member.txt. If the file doesn't exist,
-    extract from corosync.conf. Then use the node name to go to individual
+    extract from description.txt. Then use the node name to go to individual
     folder to parse pacemaker.log and messages. If messages is missing, parse
     journal.log
 
@@ -271,18 +271,18 @@ class LogParser():
         except KeyError:
           logging.info('members.txt is missing.')
 
-        # Get the node names from corosync.conf if members.txt is missing
+        # Get the node names from description.txt if members.txt is missing
         if not members:
           try:
-            corosync_conf = t.extractfile(f'{folder}/corosync.conf')
-            corosync_line = corosync_conf.readline().decode('utf-8')
-            while corosync_line:
-              if re.search('ring0_addr', corosync_line):
-                members.append(corosync_line.split(': ').pop().strip('\n'))
-              corosync_line = corosync_conf.readline().decode('utf-8')
+            description = t.extractfile(f'{folder}/description.txt')
+            description_line = description.readline().decode('utf-8')
+            while description_line:
+              if re.search('System info', description_line):
+                members.append(description_line.split(' ').pop().strip(':\n'))
+              description_line = description.readline().decode('utf-8')
           except KeyError:
             logging.info(
-                'corosync.conf is missing, not able to identify cluster nodes'
+                'description.txt is missing, not able to identify cluster nodes'
                 '. Please manually extract the logs and parse them.')
             sys.exit()
 
