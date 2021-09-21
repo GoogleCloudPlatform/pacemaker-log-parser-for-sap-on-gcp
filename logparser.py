@@ -80,6 +80,11 @@ class LogParser():
       if len(variables.p) > 2:
         logging.info('Please input max two pacemaker logs from two nodes.')
         sys.exit()
+    
+    if variables.hb:
+      if len(variables.hb) > 2:
+        logging.info('Please input max two hb_report from two nodes.')
+        sys.exit()
 
     if variables.sos:
       if len(variables.sos) > 2:
@@ -91,7 +96,7 @@ class LogParser():
         ' of|reboot|cannot run anywhere|attrd_peer_update|High CPU load detected|cli-ban|cli-prefer'
         'cib-bootstrap-options-maintenance-mode|-is-managed|-maintenance|-standby')
     self.system_log_keywords = (
-        r'SAPHana\(|SAPHanaController\(|SAPHanaTopology\(|SAPInstance\(|gcp-vpc-move-vip:|gcp:alias:|gcp:stonith|fence_gce:|corosync\[|Result'
+        r'SAPHana\(|SAPHanaController\(|SAPHanaTopology\(|SAPInstance\(|gcp-vpc-move-vip|gcp:alias|gcp:stonith|fence_gce|corosync\[|Result'
         ' of|reboot')
 
     # Generate the big sql query
@@ -135,7 +140,7 @@ class LogParser():
     # SAPInstance, gcp:stonith, gcp:alias, gcp-vpc-move-vip,fence_gce error
     sql.append(
         'SELECT rowid, TIME, NODE, COMPONENT, PAYLOAD FROM ' + table +
-        " WHERE (COMPONENT LIKE 'SAPInstance%' OR COMPONENT in ('stonith-ng:', 'gcp:stonith:','gcp:alias:','gcp-vpc-move-vip:','fence_gce:')) AND (PAYLOAD LIKE '%ERROR%' or PAYLOAD LIKE '%Failed%')"
+        " WHERE (COMPONENT LIKE 'SAPInstance%' OR COMPONENT in ('stonith-ng', 'gcp:stonith','gcp:alias','gcp-vpc-move-vip','fence_gce')) AND (PAYLOAD LIKE '%ERROR%' or PAYLOAD LIKE '%Failed%')"
     )
     # SAPHANA error or warning
     sql.append(
@@ -277,7 +282,7 @@ class LogParser():
             description = t.extractfile(f'{folder}/description.txt')
             description_line = description.readline().decode('utf-8')
             while description_line:
-              if re.search('System info', description_line):
+              if re.search('^(?!#####)System info', description_line):
                 members.append(description_line.split(' ').pop().strip(':\n'))
               description_line = description.readline().decode('utf-8')
           except KeyError:
@@ -470,12 +475,12 @@ class LogParser():
           # Split the line into 4 components:
           # timestamp, host, component, PAYLOAD
           newline = re.split(r'\s+', logline, 5)
-          record = [str(timestamp[0]), newline[3], newline[4], newline[5]]
+          record = [str(timestamp[0]), newline[3], newline[4].strip(':').strip('/'), newline[5]]
         elif timestamp[1] == 2:
           # Split the line into 4 components:
           # timestamp, host, component, PAYLOAD
           newline = re.split(r'\s+', logline, 3)
-          record = [str(timestamp[0]), newline[1], newline[2], newline[3]]
+          record = [str(timestamp[0]), newline[1], newline[2].strip(':').strip('/'), newline[3]]
         self.conn.execute('INSERT INTO log VALUES (?,?,?,?)', record)
         self.conn.commit()
 
@@ -558,7 +563,7 @@ def main():
       '-hb',
       metavar='hb_report.tar.bz2',
       help='Specify hb_report',
-      nargs=1)
+      nargs='+')
   parser.add_argument(
       '-sos',
       metavar='sosreport.tar.xz',
