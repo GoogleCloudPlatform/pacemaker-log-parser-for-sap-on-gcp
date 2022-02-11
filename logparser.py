@@ -193,7 +193,7 @@ class LogParser():
     if self.pacemaker_log:
       self.logfile_parser(self.pacemaker_log, 'p')
     if self.hb_report:
-      self.hb_report_parser(self.hb_report[0])
+      self.hb_report_parser(self.hb_report)
     if self.SOSREPORT:
       self.sosreport_parser(self.SOSREPORT)
     if self.output_file:
@@ -241,7 +241,7 @@ class LogParser():
       except OSError:
         logging.error('Cannot find/open/read file: %s.', log)
 
-  def hb_report_parser(self, file):
+  def hb_report_parser(self, filelist):
     """Parse hb_report in format tar.gz.
 
     Extract the two cluster nodes from member.txt. If the file doesn't exist,
@@ -250,55 +250,59 @@ class LogParser():
     journal.log
 
     Args:
-      file: String for hb_report name
+      file: String list for hb_report name
 
     Raises:
       ReadError: An error occured when opening the tar file
       FileNotFoundError: An error occured when the tar file doesn't exist
       KeyError: An error occured when the file to extract was missing
     """
-    try:
-      t = tarfile.open(file, 'r')
-    except tarfile.ReadError:
-      logging.error('Cannot read the file %s. '
-                    'Please manually extract the logs and parse them.', file)
-      sys.exit()
-    except FileNotFoundError:
-      logging.error('Cannot find the file %s. ', file)
-      sys.exit()
-    else:
-      members = []
-      with t:
-        # Get the node names from members.txt
-        try:
-          folder = os.path.commonprefix(t.getnames())
-          members = t.extractfile(f'{folder}/members.txt').readline().decode('utf-8').split()
-        except KeyError:
-          logging.info('members.txt is missing.')
-
-        # Get the node names from description.txt if members.txt is missing
-        if not members:
+    for file in filelist:
+      try:
+        t = tarfile.open(file, 'r')
+      except tarfile.ReadError:
+        logging.error('Cannot read the file %s. '
+                      'Please manually extract the logs and parse them.', file)
+        continue
+      except FileNotFoundError:
+        logging.error('Cannot find the file %s. ', file)
+        continue
+      else:
+        members = []
+        with t:
+          # Get the node names from members.txt
           try:
-            description = t.extractfile(f'{folder}/description.txt')
-            description_line = description.readline().decode('utf-8')
-            while description_line:
-              if re.search('^(?!#####)System info', description_line):
-                members.append(description_line.split(' ').pop().strip(':\n'))
-              description_line = description.readline().decode('utf-8')
+            folder = os.path.commonprefix(t.getnames())
+            members = t.extractfile(f'{folder}/members.txt').readline().decode('utf-8').split()
           except KeyError:
-            logging.info(
-                'description.txt is missing, not able to identify cluster nodes'
-                '. Please manually extract the logs and parse them.')
-            sys.exit()
+            logging.info('members.txt is missing.')
+          except EOFError:
+            logging.info('%s is corrupted or incomplete, please try to uncompress and use option s or p to parse individual files', file)
+            continue
 
-        for member in members:
-          logging.info('Found node %s in %s.', member, file)
-          # Parse pacemaker.log
-          if not self.compressed_file_parser(t, [folder, member, 'pacemaker.log'], 'SLES', 'p'):
-            self.compressed_file_parser(t, [folder, member, 'corosync.log'], 'SLES', 'p')
-          # Parse system log /var/log/messages or jounal.log
-          if not self.compressed_file_parser(t, [folder, member, 'messages'], 'SLES', 's'):
-            self.compressed_file_parser(t, [folder, member, 'journal.log'], 'SLES', 's')
+          # Get the node names from description.txt if members.txt is missing
+          if not members:
+            try:
+              description = t.extractfile(f'{folder}/description.txt')
+              description_line = description.readline().decode('utf-8')
+              while description_line:
+                if re.search('^(?!#####)System info', description_line):
+                  members.append(description_line.split(' ').pop().strip(':\n'))
+                description_line = description.readline().decode('utf-8')
+            except KeyError:
+              logging.info(
+                  'description.txt is missing, not able to identify cluster nodes'
+                  '. Please manually extract the logs and parse them.')
+              continue
+
+          for member in members:
+            logging.info('Found node %s in %s.', member, file)
+            # Parse pacemaker.log
+            if not self.compressed_file_parser(t, [folder, member, 'pacemaker.log'], 'SLES', 'p'):
+              self.compressed_file_parser(t, [folder, member, 'corosync.log'], 'SLES', 'p')
+            # Parse system log /var/log/messages or jounal.log
+            if not self.compressed_file_parser(t, [folder, member, 'messages'], 'SLES', 's'):
+              self.compressed_file_parser(t, [folder, member, 'journal.log'], 'SLES', 's')
 
   def compressed_file_parser(self, file_handle, path, distro, log_type):
     """Extract log file and parse each log line.
@@ -363,10 +367,10 @@ class LogParser():
         logging.error(
             'Cannot read the file %s. '
             'Please manually extract the logs and parse them.', file)
-        sys.exit()
+        continue
       except FileNotFoundError:
         logging.error('Cannot find the file %s. ', file)
-        sys.exit()
+        continue
       else:
         with t:
           try:
@@ -381,6 +385,9 @@ class LogParser():
               line = osfile.readline().decode('utf-8')
           except KeyError:
             logging.info('etc/os-release is missing.')
+          except EOFError:
+            logging.info('%s is corrupted or incomplete, please try to uncompress and use option s or p to parse individual files', file)
+            continue
 
           logging.info('Parsing %s.', file)
           if float(os_ver) >= 8:
