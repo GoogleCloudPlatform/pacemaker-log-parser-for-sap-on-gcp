@@ -70,16 +70,6 @@ class LogParser():
         logging.info(
             'Begin time is equal or later than end time, please correct.')
         sys.exit()
-
-    if variables.s:
-      if len(variables.s) > 2:
-        logging.info('Please input max two system logs from two nodes.')
-        sys.exit()
-
-    if variables.p:
-      if len(variables.p) > 2:
-        logging.info('Please input max two pacemaker logs from two nodes.')
-        sys.exit()
     
     if variables.hb:
       if len(variables.hb) > 2:
@@ -92,7 +82,7 @@ class LogParser():
         sys.exit()
 
     self.pacemaker_log_keywords = (
-        'LogAction|LogNodeActions|stonith-ng|pacemaker-fenced|crit:|check_migration_threshold|corosync|Result'
+        'LogAction|LogNodeActions|stonith-ng|pacemaker-fenced|check_migration_threshold|corosync|Result'
         ' of|reboot|cannot run anywhere|attrd_peer_update|High CPU load detected|cli-ban|cli-prefer'
         'cib-bootstrap-options-maintenance-mode|-is-managed|-maintenance|-standby')
     self.system_log_keywords = (
